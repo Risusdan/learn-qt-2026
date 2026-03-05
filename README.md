@@ -25,7 +25,23 @@ Project source lives in [`project/`](project/).
 
 ## Lessons
 
-*(Lessons will be added here as they are generated.)*
+### Week 1 — Introduction to Qt
+- [Introduction to Qt](weeks/week-01/introduction-to-qt.md)
+- [Qt Architecture](weeks/week-01/qt-architecture.md)
+- [Environment Setup](weeks/week-01/environment-setup.md)
+
+### Week 2 — Qt Object Model & Type System
+- [Qt Object Model](weeks/week-02/qt-object-model.md)
+- [Qt Types](weeks/week-02/qt-types.md)
+- [Testing and Debugging](weeks/week-02/testing-and-debugging.md)
+
+### Week 3 — Signals & Slots
+- [Signals and Slots](weeks/week-03/signals-and-slots.md)
+- [Event Loop and Event Handling](weeks/week-03/event-loop.md)
+
+### Week 4 — Widgets, Layouts & Main Window
+- [Widgets and Layouts](weeks/week-04/widgets-and-layouts.md)
+- [Main Window Architecture](weeks/week-04/main-window.md)
 
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)

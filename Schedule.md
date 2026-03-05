@@ -7,10 +7,10 @@ All required topics from the [Learning Path](LearningPath.md). OPTIONAL topics e
 
 | Week | Topic | Status |
 | ---- | ----- | ------ |
-| 1 | Introduction to Qt | Not started |
-| 2 | Qt Object Model & Type System | Not started |
-| 3 | Signals & Slots | Not started |
-| 4 | Widgets, Layouts & Main Window | Not started |
+| 1 | Introduction to Qt | Done |
+| 2 | Qt Object Model & Type System | Done |
+| 3 | Signals & Slots | Done |
+| 4 | Widgets, Layouts & Main Window | Done |
 | 5 | File I/O & Dialogs | Not started |
 | 6 | Log Viewer — Basic | Not started |
 | 7 | Model/View Programming | Not started |
