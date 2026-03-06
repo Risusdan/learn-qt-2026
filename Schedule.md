@@ -12,7 +12,7 @@ All required topics from the [Learning Path](LearningPath.md). OPTIONAL topics e
 | 3 | Signals & Slots | Done |
 | 4 | Widgets, Layouts & Main Window | Done |
 | 5 | File I/O & Dialogs | Done |
-| 6 | Log Viewer — Basic | Not started |
+| 6 | Log Viewer — Basic | Done |
 | 7 | Model/View Programming | Not started |
 | 8 | Filtering, Delegates & Search | Not started |
 | 9 | Text Editor — Core | Not started |

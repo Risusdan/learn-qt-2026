@@ -1,6 +1,7 @@
-// Week 5 — File I/O & Dialogs
+// Week 6 — Log Viewer Basic
 
 #include "MainWindow.h"
+#include "LogViewer.h"
 
 #include <QAction>
 #include <QApplication>
@@ -11,6 +12,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QStatusBar>
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -87,13 +89,20 @@ void MainWindow::setupTabs()
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);
 
-    // Tab 1 — Log Viewer (placeholder)
-    auto *logViewerTab = new QWidget(m_tabWidget);
-    auto *logLayout    = new QVBoxLayout(logViewerTab);
-    auto *logLabel     = new QLabel(tr("Log Viewer \u2014 Coming Week 6"), logViewerTab);
-    logLabel->setAlignment(Qt::AlignCenter);
-    logLayout->addWidget(logLabel);
-    m_tabWidget->addTab(logViewerTab, tr("Log Viewer"));
+    // Tab 1 — Log Viewer (Week 6)
+    m_logViewer = new LogViewer(m_tabWidget);
+    m_tabWidget->addTab(m_logViewer, tr("Log Viewer"));
+
+    // Update window title when a file is loaded
+    connect(m_logViewer, &LogViewer::fileLoaded, this, [this](const QString &filePath) {
+        const QString fileName = QFileInfo(filePath).fileName();
+        setWindowTitle(tr("DevConsole \u2014 %1").arg(fileName));
+    });
+
+    // Show line count in the status bar when it changes
+    connect(m_logViewer, &LogViewer::lineCountChanged, this, [this](int count) {
+        statusBar()->showMessage(tr("Lines: %1").arg(count));
+    });
 
     // Tab 2 — Text Editor (placeholder)
     auto *textEditorTab = new QWidget(m_tabWidget);
@@ -180,10 +189,8 @@ void MainWindow::updateRecentFilesMenu()
         auto *action = new QAction(displayName, m_recentFilesMenu);
         action->setData(filePath);
         connect(action, &QAction::triggered, this, [this, filePath]() {
-            QMessageBox::information(
-                this,
-                tr("Open Recent"),
-                tr("Would open: %1").arg(filePath));
+            m_logViewer->loadFile(filePath);
+            m_tabWidget->setCurrentWidget(m_logViewer);
         });
         m_recentFilesMenu->addAction(action);
     }
@@ -223,10 +230,9 @@ void MainWindow::onOpenFile()
 
     updateRecentFilesMenu();
 
-    QMessageBox::information(
-        this,
-        tr("File Selected"),
-        tr("Selected file: %1").arg(filePath));
+    // Load the file into the LogViewer and switch to its tab
+    m_logViewer->loadFile(filePath);
+    m_tabWidget->setCurrentWidget(m_logViewer);
 }
 
 void MainWindow::onSaveFile()
@@ -256,5 +262,5 @@ void MainWindow::onAbout()
            "<p>A multi-tab developer console for log viewing, "
            "text editing, and serial monitoring.</p>"
            "<p>Built with Qt 6 &amp; C++17.</p>"
-           "<p>Week 5 — File I/O &amp; Dialogs</p>"));
+           "<p>Week 6 — Log Viewer Basic</p>"));
 }

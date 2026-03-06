@@ -47,6 +47,10 @@ Project source lives in [`project/`](project/).
 - [File I/O in Qt](weeks/week-05/file-io.md)
 - [Dialogs in Qt](weeks/week-05/dialogs.md)
 
+### Week 6 — Log Viewer Basic
+- [Text Display with QPlainTextEdit](weeks/week-06/text-display.md)
+- [Drag and Drop in Qt](weeks/week-06/drag-and-drop.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

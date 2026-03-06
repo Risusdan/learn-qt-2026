@@ -1,4 +1,4 @@
-// Week 5 — File I/O & Dialogs
+// Week 6 — Log Viewer Basic
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
@@ -8,6 +8,7 @@
 
 class QTabWidget;
 class QMenu;
+class LogViewer;
 
 class MainWindow : public QMainWindow
 {
@@ -33,6 +34,7 @@ private:
     QTabWidget  *m_tabWidget       = nullptr;
     QMenu       *m_recentFilesMenu = nullptr;
     QStringList  m_recentFiles;
+    LogViewer   *m_logViewer       = nullptr;
 
     static constexpr int MaxRecentFiles = 5;
 };

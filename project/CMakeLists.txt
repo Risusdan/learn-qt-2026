@@ -1,4 +1,4 @@
-# Week 5 — File I/O & Dialogs
+# Week 6 — Log Viewer Basic
 cmake_minimum_required(VERSION 3.16)
 project(DevConsole LANGUAGES CXX)
 
@@ -10,6 +10,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 qt_add_executable(DevConsole
     main.cpp
     MainWindow.h MainWindow.cpp
+    LogViewer.h  LogViewer.cpp
 )
 
 target_link_libraries(DevConsole PRIVATE Qt6::Widgets)
