@@ -1,4 +1,4 @@
-// Week 8 — Filtering, Delegates & Search
+// Week 9 — Text Editor Core
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
@@ -9,6 +9,7 @@
 class QTabWidget;
 class QMenu;
 class LogViewer;
+class CodeEditor;
 
 class MainWindow : public QMainWindow
 {
@@ -35,6 +36,7 @@ private:
     QMenu       *m_recentFilesMenu = nullptr;
     QStringList  m_recentFiles;
     LogViewer   *m_logViewer       = nullptr;
+    CodeEditor  *m_codeEditor      = nullptr;
 
     static constexpr int MaxRecentFiles = 5;
 };

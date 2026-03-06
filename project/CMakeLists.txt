@@ -1,4 +1,4 @@
-# Week 8 — Filtering, Delegates & Search
+# Week 9 — Text Editor Core
 cmake_minimum_required(VERSION 3.16)
 project(DevConsole LANGUAGES CXX)
 
@@ -14,6 +14,8 @@ qt_add_executable(DevConsole
     LogModel.h      LogModel.cpp
     LogFilterProxy.h LogFilterProxy.cpp
     LogDelegate.h   LogDelegate.cpp
+    CodeEditor.h    CodeEditor.cpp
+    CppHighlighter.h CppHighlighter.cpp
 )
 
 target_link_libraries(DevConsole PRIVATE Qt6::Widgets)

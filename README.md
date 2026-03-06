@@ -58,6 +58,10 @@ Project source lives in [`project/`](project/).
 - [Proxy Models](weeks/week-08/proxy-models.md)
 - [Delegates](weeks/week-08/delegates.md)
 
+### Week 9 — Text Editor Core
+- [Custom Text Editor](weeks/week-09/custom-text-editor.md)
+- [Syntax Highlighting](weeks/week-09/syntax-highlighting.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

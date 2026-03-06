@@ -1,6 +1,8 @@
-// Week 8 — Filtering, Delegates & Search
+// Week 9 — Text Editor Core
 
 #include "MainWindow.h"
+#include "CodeEditor.h"
+#include "CppHighlighter.h"
 #include "LogViewer.h"
 
 #include <QAction>
@@ -104,13 +106,10 @@ void MainWindow::setupTabs()
         statusBar()->showMessage(tr("Lines: %1").arg(count));
     });
 
-    // Tab 2 — Text Editor (placeholder)
-    auto *textEditorTab = new QWidget(m_tabWidget);
-    auto *textLayout    = new QVBoxLayout(textEditorTab);
-    auto *textLabel     = new QLabel(tr("Text Editor \u2014 Coming Week 9"), textEditorTab);
-    textLabel->setAlignment(Qt::AlignCenter);
-    textLayout->addWidget(textLabel);
-    m_tabWidget->addTab(textEditorTab, tr("Text Editor"));
+    // Tab 2 — Text Editor (Week 9)
+    m_codeEditor = new CodeEditor(m_tabWidget);
+    new CppHighlighter(m_codeEditor->document());
+    m_tabWidget->addTab(m_codeEditor, tr("Text Editor"));
 
     // Tab 3 — Serial Monitor (placeholder)
     auto *serialMonitorTab = new QWidget(m_tabWidget);
@@ -262,5 +261,5 @@ void MainWindow::onAbout()
            "<p>A multi-tab developer console for log viewing, "
            "text editing, and serial monitoring.</p>"
            "<p>Built with Qt 6 &amp; C++17.</p>"
-           "<p>Week 8 — Filtering, Delegates & Search</p>"));
+           "<p>Week 9 — Text Editor Core</p>"));
 }
