@@ -1,4 +1,4 @@
-// Week 7 — Model/View Programming
+// Week 8 — Filtering, Delegates & Search
 
 #include "MainWindow.h"
 #include "LogViewer.h"
@@ -262,5 +262,5 @@ void MainWindow::onAbout()
            "<p>A multi-tab developer console for log viewing, "
            "text editing, and serial monitoring.</p>"
            "<p>Built with Qt 6 &amp; C++17.</p>"
-           "<p>Week 7 — Model/View Programming</p>"));
+           "<p>Week 8 — Filtering, Delegates & Search</p>"));
 }

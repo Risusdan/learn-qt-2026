@@ -54,6 +54,10 @@ Project source lives in [`project/`](project/).
 ### Week 7 — Model/View Programming
 - [Model/View Programming](weeks/week-07/model-view.md)
 
+### Week 8 — Filtering, Delegates & Search
+- [Proxy Models](weeks/week-08/proxy-models.md)
+- [Delegates](weeks/week-08/delegates.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

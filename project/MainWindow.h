@@ -1,4 +1,4 @@
-// Week 7 — Model/View Programming
+// Week 8 — Filtering, Delegates & Search
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
