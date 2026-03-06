@@ -1,4 +1,4 @@
-// Week 10 — Text Editor Features
+// Week 11 — Serial Monitor Connection
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
@@ -10,6 +10,7 @@ class QAction;
 class QTabWidget;
 class QMenu;
 class LogViewer;
+class SerialMonitorTab;
 class TextEditorTab;
 
 class MainWindow : public QMainWindow
@@ -40,7 +41,8 @@ private:
     QMenu          *m_recentFilesMenu  = nullptr;
     QStringList     m_recentFiles;
     LogViewer      *m_logViewer        = nullptr;
-    TextEditorTab  *m_textEditorTab    = nullptr;
+    TextEditorTab      *m_textEditorTab    = nullptr;
+    SerialMonitorTab   *m_serialMonitorTab = nullptr;
     QAction        *m_undoAction       = nullptr;
     QAction        *m_redoAction       = nullptr;
 

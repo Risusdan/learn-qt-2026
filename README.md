@@ -66,6 +66,9 @@ Project source lives in [`project/`](project/).
 - [File Browser](weeks/week-10/file-browser.md)
 - [Find and Replace](weeks/week-10/find-replace.md)
 
+### Week 11 — Serial Monitor Connection
+- [Serial Port Communication](weeks/week-11/serial-port.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

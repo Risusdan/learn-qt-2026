@@ -1,8 +1,9 @@
-// Week 10 — Text Editor Features
+// Week 11 — Serial Monitor Connection
 
 #include "MainWindow.h"
 #include "CodeEditor.h"
 #include "LogViewer.h"
+#include "SerialMonitorTab.h"
 #include "TextEditorTab.h"
 
 #include <QAction>
@@ -154,13 +155,18 @@ void MainWindow::setupTabs()
         statusBar()->showMessage(tr("Saved: %1").arg(fileName), 3000);
     });
 
-    // Tab 3 — Serial Monitor (placeholder)
-    auto *serialMonitorTab = new QWidget(m_tabWidget);
-    auto *serialLayout     = new QVBoxLayout(serialMonitorTab);
-    auto *serialLabel      = new QLabel(tr("Serial Monitor — Coming Week 11"), serialMonitorTab);
-    serialLabel->setAlignment(Qt::AlignCenter);
-    serialLayout->addWidget(serialLabel);
-    m_tabWidget->addTab(serialMonitorTab, tr("Serial Monitor"));
+    // Tab 3 — Serial Monitor
+    m_serialMonitorTab = new SerialMonitorTab(m_tabWidget);
+    m_tabWidget->addTab(m_serialMonitorTab, tr("Serial Monitor"));
+
+    connect(m_serialMonitorTab, &SerialMonitorTab::connectionChanged,
+            this, [this](bool connected, const QString &portName) {
+        if (connected) {
+            statusBar()->showMessage(tr("Connected: %1").arg(portName));
+        } else {
+            statusBar()->showMessage(tr("Disconnected"), 3000);
+        }
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -334,5 +340,5 @@ void MainWindow::onAbout()
            "<p>A multi-tab developer console for log viewing, "
            "text editing, and serial monitoring.</p>"
            "<p>Built with Qt 6 &amp; C++17.</p>"
-           "<p>Week 10 — Text Editor Features</p>"));
+           "<p>Week 11 — Serial Monitor Connection</p>"));
 }
