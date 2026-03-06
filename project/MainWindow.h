@@ -1,4 +1,4 @@
-// Week 6 — Log Viewer Basic
+// Week 7 — Model/View Programming
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H

@@ -1,18 +1,16 @@
-// Week 6 — Log Viewer Basic
+// Week 7 — Model/View Programming
 
 #include "LogViewer.h"
+#include "LogModel.h"
 
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QFile>
-#include <QFontDatabase>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QMimeData>
-#include <QPlainTextEdit>
 #include <QPushButton>
-#include <QScrollBar>
-#include <QTextStream>
+#include <QTableView>
 #include <QVBoxLayout>
 
 // ---------------------------------------------------------------------------
@@ -22,12 +20,18 @@
 LogViewer::LogViewer(QWidget *parent)
     : QWidget(parent)
 {
-    // --- Main text display ---------------------------------------------------
-    m_textDisplay = new QPlainTextEdit(this);
-    m_textDisplay->setReadOnly(true);
-    m_textDisplay->setLineWrapMode(QPlainTextEdit::NoWrap);
-    m_textDisplay->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-    m_textDisplay->setMaximumBlockCount(50000);
+    // --- Model ---------------------------------------------------------------
+    m_model = new LogModel(this);
+
+    // --- Table view ----------------------------------------------------------
+    m_tableView = new QTableView(this);
+    m_tableView->setModel(m_model);
+    m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_tableView->setSortingEnabled(true);
+    m_tableView->setAlternatingRowColors(true);
+    m_tableView->verticalHeader()->setVisible(false);
+    m_tableView->horizontalHeader()->setStretchLastSection(true);
 
     // --- Bottom toolbar ------------------------------------------------------
     m_autoScrollButton = new QPushButton(tr("Auto-scroll: ON"), this);
@@ -40,7 +44,7 @@ LogViewer::LogViewer(QWidget *parent)
 
     // --- Overall layout ------------------------------------------------------
     auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(m_textDisplay, /*stretch=*/1);
+    mainLayout->addWidget(m_tableView, /*stretch=*/1);
     mainLayout->addLayout(toolbarLayout);
 
     // --- Drag-and-drop -------------------------------------------------------
@@ -49,9 +53,6 @@ LogViewer::LogViewer(QWidget *parent)
     // --- Connections ---------------------------------------------------------
     connect(m_autoScrollButton, &QPushButton::clicked,
             this, &LogViewer::toggleAutoScroll);
-
-    connect(m_textDisplay->verticalScrollBar(), &QScrollBar::valueChanged,
-            this, &LogViewer::onScrollChanged);
 }
 
 // ---------------------------------------------------------------------------
@@ -60,19 +61,9 @@ LogViewer::LogViewer(QWidget *parent)
 
 void LogViewer::loadFile(const QString &filePath)
 {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning("LogViewer: could not open '%s': %s",
-                 qPrintable(filePath),
-                 qPrintable(file.errorString()));
+    if (!m_model->loadFromFile(filePath)) {
+        qWarning("LogViewer: could not open '%s'", qPrintable(filePath));
         return;
-    }
-
-    m_textDisplay->clear();
-
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        m_textDisplay->appendPlainText(in.readLine());
     }
 
     const int count = lineCount();
@@ -81,16 +72,15 @@ void LogViewer::loadFile(const QString &filePath)
     emit fileLoaded(filePath);
     emit lineCountChanged(count);
 
-    // Scroll to the bottom if auto-scroll is enabled
+    // Scroll to bottom if auto-scroll is enabled
     if (m_autoScroll) {
-        auto *scrollBar = m_textDisplay->verticalScrollBar();
-        scrollBar->setValue(scrollBar->maximum());
+        m_tableView->scrollToBottom();
     }
 }
 
 int LogViewer::lineCount() const
 {
-    return m_textDisplay->document()->blockCount();
+    return m_model->entryCount();
 }
 
 // ---------------------------------------------------------------------------
@@ -126,19 +116,4 @@ void LogViewer::toggleAutoScroll()
     m_autoScroll = !m_autoScroll;
     m_autoScrollButton->setText(
         m_autoScroll ? tr("Auto-scroll: ON") : tr("Auto-scroll: OFF"));
-}
-
-void LogViewer::onScrollChanged(int value)
-{
-    const auto *scrollBar = m_textDisplay->verticalScrollBar();
-    constexpr int threshold = 10;
-
-    // Re-enable auto-scroll when user scrolls to the bottom
-    const bool atBottom = (value >= scrollBar->maximum() - threshold);
-
-    if (atBottom != m_autoScroll) {
-        m_autoScroll = atBottom;
-        m_autoScrollButton->setText(
-            m_autoScroll ? tr("Auto-scroll: ON") : tr("Auto-scroll: OFF"));
-    }
 }

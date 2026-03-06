@@ -1,15 +1,16 @@
-// Week 6 — Log Viewer Basic
+// Week 7 — Model/View Programming
 
 #ifndef LOGVIEWER_H
 #define LOGVIEWER_H
 
 #include <QWidget>
 
-class QPlainTextEdit;
+class QTableView;
 class QPushButton;
 class QLabel;
 class QDragEnterEvent;
 class QDropEvent;
+class LogModel;
 
 class LogViewer : public QWidget
 {
@@ -31,13 +32,13 @@ protected:
 
 private slots:
     void toggleAutoScroll();
-    void onScrollChanged(int value);
 
 private:
-    QPlainTextEdit *m_textDisplay      = nullptr;
-    QPushButton    *m_autoScrollButton = nullptr;
-    QLabel         *m_lineCountLabel   = nullptr;
-    bool            m_autoScroll       = true;
+    QTableView  *m_tableView       = nullptr;
+    LogModel    *m_model           = nullptr;
+    QPushButton *m_autoScrollButton = nullptr;
+    QLabel      *m_lineCountLabel  = nullptr;
+    bool         m_autoScroll      = true;
 };
 
 #endif // LOGVIEWER_H

@@ -1,4 +1,4 @@
-# Week 6 — Log Viewer Basic
+# Week 7 — Model/View Programming
 cmake_minimum_required(VERSION 3.16)
 project(DevConsole LANGUAGES CXX)
 
@@ -11,6 +11,7 @@ qt_add_executable(DevConsole
     main.cpp
     MainWindow.h MainWindow.cpp
     LogViewer.h  LogViewer.cpp
+    LogModel.h   LogModel.cpp
 )
 
 target_link_libraries(DevConsole PRIVATE Qt6::Widgets)
