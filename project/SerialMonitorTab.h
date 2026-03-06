@@ -1,4 +1,4 @@
-// Week 11 — Serial Monitor Connection
+// Week 12 — Threading
 
 #ifndef SERIALMONITORTAB_H
 #define SERIALMONITORTAB_H
@@ -10,8 +10,9 @@ class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
-class QSerialPort;
 class QStackedWidget;
+class QThread;
+class SerialWorker;
 
 class SerialMonitorTab : public QWidget
 {
@@ -22,13 +23,21 @@ public:
     ~SerialMonitorTab() override;
 
 signals:
+    // Outgoing signals to the UI (MainWindow status bar)
     void connectionChanged(bool connected, const QString &portName);
+
+    // Request signals to the worker thread (queued connections)
+    void openRequested(const QString &portName, qint32 baudRate);
+    void closeRequested();
+    void sendRequested(const QByteArray &data);
 
 private slots:
     void refreshPorts();
     void toggleConnection();
-    void onReadyRead();
     void sendData();
+    void onDataReceived(const QByteArray &data);
+    void onWorkerError(const QString &errorString);
+    void onConnectionChanged(bool connected, const QString &portName);
 
 private:
     void appendToDisplay(const QByteArray &data);
@@ -49,9 +58,10 @@ private:
     QComboBox   *m_lineEndingCombo = nullptr;
     QPushButton *m_sendButton      = nullptr;
 
-    // Serial
-    QSerialPort *m_serialPort = nullptr;
-    QByteArray   m_readBuffer;
+    // Threading
+    QThread      *m_workerThread = nullptr;
+    SerialWorker *m_worker       = nullptr;
+    bool          m_connected    = false;
 };
 
 #endif // SERIALMONITORTAB_H

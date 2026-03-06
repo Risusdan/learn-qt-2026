@@ -18,7 +18,7 @@ All required topics from the [Learning Path](LearningPath.md). OPTIONAL topics e
 | 9 | Text Editor — Core | Done |
 | 10 | Text Editor — Features | Done |
 | 11 | Serial Monitor — Connection | Done |
-| 12 | Threading | Not started |
+| 12 | Threading | Done |
 | 13 | Serial Monitor — Advanced | Not started |
 | 14 | Cross-Platform & Deployment | Not started |
 

@@ -69,6 +69,9 @@ Project source lives in [`project/`](project/).
 ### Week 11 — Serial Monitor Connection
 - [Serial Port Communication](weeks/week-11/serial-port.md)
 
+### Week 12 — Threading
+- [Threading](weeks/week-12/threading.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

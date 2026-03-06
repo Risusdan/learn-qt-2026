@@ -1,4 +1,4 @@
-# Week 11 — Serial Monitor Connection
+# Week 12 — Threading
 cmake_minimum_required(VERSION 3.16)
 project(DevConsole LANGUAGES CXX)
 
@@ -20,6 +20,7 @@ qt_add_executable(DevConsole
     FileBrowser.h      FileBrowser.cpp
     FindReplaceDialog.h FindReplaceDialog.cpp
     SerialMonitorTab.h  SerialMonitorTab.cpp
+    SerialWorker.h      SerialWorker.cpp
 )
 
 target_link_libraries(DevConsole PRIVATE Qt6::Widgets Qt6::SerialPort)

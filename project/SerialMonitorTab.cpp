@@ -1,6 +1,7 @@
-// Week 11 — Serial Monitor Connection
+// Week 12 — Threading
 
 #include "SerialMonitorTab.h"
+#include "SerialWorker.h"
 
 #include <QComboBox>
 #include <QFont>
@@ -10,9 +11,9 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollBar>
-#include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QStackedWidget>
+#include <QThread>
 #include <QVBoxLayout>
 
 // ---------------------------------------------------------------------------
@@ -22,8 +23,10 @@
 SerialMonitorTab::SerialMonitorTab(QWidget *parent)
     : QWidget(parent)
 {
-    // ---- Serial port (no parent yet — we assign it below) -----------------
-    m_serialPort = new QSerialPort(this);
+    // ---- Worker thread setup ----------------------------------------------
+    m_workerThread = new QThread(this);
+    m_worker = new SerialWorker;  // No parent — will be moved to thread
+    m_worker->moveToThread(m_workerThread);
 
     // ---- Top toolbar row --------------------------------------------------
     auto *toolbarLayout = new QHBoxLayout;
@@ -86,15 +89,12 @@ SerialMonitorTab::SerialMonitorTab(QWidget *parent)
     mainLayout->addWidget(m_displayStack, 1);  // stretch factor 1
     mainLayout->addLayout(sendLayout);
 
-    // ---- Signal-slot connections ------------------------------------------
+    // ---- UI signal-slot connections ---------------------------------------
     connect(m_refreshButton, &QPushButton::clicked,
             this, &SerialMonitorTab::refreshPorts);
 
     connect(m_connectButton, &QPushButton::clicked,
             this, &SerialMonitorTab::toggleConnection);
-
-    connect(m_serialPort, &QSerialPort::readyRead,
-            this, &SerialMonitorTab::onReadyRead);
 
     connect(m_sendButton, &QPushButton::clicked,
             this, &SerialMonitorTab::sendData);
@@ -102,15 +102,45 @@ SerialMonitorTab::SerialMonitorTab(QWidget *parent)
     connect(m_sendEdit, &QLineEdit::returnPressed,
             this, &SerialMonitorTab::sendData);
 
+    // ---- Cross-thread connections (queued automatically) ------------------
+    // Requests from main thread → worker thread
+    connect(this, &SerialMonitorTab::openRequested,
+            m_worker, &SerialWorker::openPort);
+
+    connect(this, &SerialMonitorTab::closeRequested,
+            m_worker, &SerialWorker::closePort);
+
+    connect(this, &SerialMonitorTab::sendRequested,
+            m_worker, &SerialWorker::sendData);
+
+    // Responses from worker thread → main thread
+    connect(m_worker, &SerialWorker::dataReceived,
+            this, &SerialMonitorTab::onDataReceived);
+
+    connect(m_worker, &SerialWorker::errorOccurred,
+            this, &SerialMonitorTab::onWorkerError);
+
+    connect(m_worker, &SerialWorker::connectionChanged,
+            this, &SerialMonitorTab::onConnectionChanged);
+
+    // ---- Start worker thread ----------------------------------------------
+    m_workerThread->start();
+
     // ---- Initial port scan ------------------------------------------------
     refreshPorts();
 }
 
 SerialMonitorTab::~SerialMonitorTab()
 {
-    if (m_serialPort->isOpen()) {
-        m_serialPort->close();
-    }
+    // Signal the worker to close the port
+    emit closeRequested();
+
+    // Shut down the worker thread cleanly
+    m_workerThread->quit();
+    m_workerThread->wait();
+
+    // Delete worker (no parent, so we own it)
+    delete m_worker;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,54 +163,12 @@ void SerialMonitorTab::refreshPorts()
 
 void SerialMonitorTab::toggleConnection()
 {
-    if (m_serialPort->isOpen()) {
-        // ---- Disconnect ---------------------------------------------------
-        m_serialPort->close();
-        m_connectButton->setText(tr("Connect"));
-        m_statusLabel->setText(tr("Disconnected"));
-        emit connectionChanged(false, QString());
-        return;
-    }
-
-    // ---- Connect ----------------------------------------------------------
-    const QString portName = m_portCombo->currentText();
-    const qint32  baudRate = m_baudCombo->currentData().toInt();
-
-    m_serialPort->setPortName(portName);
-    m_serialPort->setBaudRate(baudRate);
-    m_serialPort->setDataBits(QSerialPort::Data8);
-    m_serialPort->setParity(QSerialPort::NoParity);
-    m_serialPort->setStopBits(QSerialPort::OneStop);
-    m_serialPort->setFlowControl(QSerialPort::NoFlowControl);
-
-    if (!m_serialPort->open(QIODevice::ReadWrite)) {
-        m_statusLabel->setText(
-            tr("Error: %1").arg(m_serialPort->errorString()));
-        return;
-    }
-
-    m_connectButton->setText(tr("Disconnect"));
-    m_statusLabel->setText(tr("Connected: %1 @ %2").arg(portName).arg(baudRate));
-    emit connectionChanged(true, portName);
-}
-
-// ---------------------------------------------------------------------------
-// Receiving Data
-// ---------------------------------------------------------------------------
-
-void SerialMonitorTab::onReadyRead()
-{
-    m_readBuffer.append(m_serialPort->readAll());
-
-    // Split by newline — process every complete line
-    QList<QByteArray> parts = m_readBuffer.split('\n');
-
-    // The last element is either empty (if buffer ended with '\n')
-    // or an incomplete line — keep it in the buffer for next time.
-    m_readBuffer = parts.takeLast();
-
-    for (const QByteArray &line : std::as_const(parts)) {
-        appendToDisplay(line);
+    if (m_connected) {
+        emit closeRequested();
+    } else {
+        const QString portName = m_portCombo->currentText();
+        const qint32  baudRate = m_baudCombo->currentData().toInt();
+        emit openRequested(portName, baudRate);
     }
 }
 
@@ -190,7 +178,7 @@ void SerialMonitorTab::onReadyRead()
 
 void SerialMonitorTab::sendData()
 {
-    if (!m_serialPort->isOpen()) {
+    if (!m_connected) {
         return;
     }
 
@@ -200,14 +188,43 @@ void SerialMonitorTab::sendData()
     const int endingIndex = m_lineEndingCombo->currentIndex();
     switch (endingIndex) {
     case 0:  /* None */ break;
-    case 1:  data.append('\n');           break;  // LF
-    case 2:  data.append('\r');           break;  // CR
-    case 3:  data.append("\r\n");         break;  // CRLF
+    case 1:  data.append('\n');    break;  // LF
+    case 2:  data.append('\r');    break;  // CR
+    case 3:  data.append("\r\n");  break;  // CRLF
     default: break;
     }
 
-    m_serialPort->write(data);
+    emit sendRequested(data);
     m_sendEdit->clear();
+}
+
+// ---------------------------------------------------------------------------
+// Worker Thread Callbacks (received on main thread via queued connections)
+// ---------------------------------------------------------------------------
+
+void SerialMonitorTab::onDataReceived(const QByteArray &data)
+{
+    appendToDisplay(data);
+}
+
+void SerialMonitorTab::onWorkerError(const QString &errorString)
+{
+    m_statusLabel->setText(tr("Error: %1").arg(errorString));
+}
+
+void SerialMonitorTab::onConnectionChanged(bool connected, const QString &portName)
+{
+    m_connected = connected;
+
+    if (connected) {
+        m_connectButton->setText(tr("Disconnect"));
+        m_statusLabel->setText(tr("Connected: %1").arg(portName));
+    } else {
+        m_connectButton->setText(tr("Connect"));
+        m_statusLabel->setText(tr("Disconnected"));
+    }
+
+    emit connectionChanged(connected, portName);
 }
 
 // ---------------------------------------------------------------------------
