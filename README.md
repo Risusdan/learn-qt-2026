@@ -43,6 +43,10 @@ Project source lives in [`project/`](project/).
 - [Widgets and Layouts](weeks/week-04/widgets-and-layouts.md)
 - [Main Window Architecture](weeks/week-04/main-window.md)
 
+### Week 5 — File I/O & Dialogs
+- [File I/O in Qt](weeks/week-05/file-io.md)
+- [Dialogs in Qt](weeks/week-05/dialogs.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed
