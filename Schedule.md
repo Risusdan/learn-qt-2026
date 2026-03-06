@@ -19,7 +19,7 @@ All required topics from the [Learning Path](LearningPath.md). OPTIONAL topics e
 | 10 | Text Editor — Features | Done |
 | 11 | Serial Monitor — Connection | Done |
 | 12 | Threading | Done |
-| 13 | Serial Monitor — Advanced | Not started |
+| 13 | Serial Monitor — Advanced | Done |
 | 14 | Cross-Platform & Deployment | Not started |
 
 ---

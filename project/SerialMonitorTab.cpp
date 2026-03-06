@@ -1,10 +1,15 @@
-// Week 12 — Threading
+// Week 13 — Serial Monitor Advanced
 
 #include "SerialMonitorTab.h"
+#include "HexViewer.h"
+#include "ProcessLauncher.h"
 #include "SerialWorker.h"
 
 #include <QComboBox>
+#include <QFile>
+#include <QFileDialog>
 #include <QFont>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -14,6 +19,7 @@
 #include <QSerialPortInfo>
 #include <QStackedWidget>
 #include <QThread>
+#include <QTime>
 #include <QVBoxLayout>
 
 // ---------------------------------------------------------------------------
@@ -55,13 +61,38 @@ SerialMonitorTab::SerialMonitorTab(QWidget *parent)
 
     toolbarLayout->addStretch();
 
+    // ---- Display controls row ---------------------------------------------
+    auto *controlsLayout = new QHBoxLayout;
+
+    m_displayModeButton = new QPushButton(tr("Hex"), this);
+    m_displayModeButton->setCheckable(true);
+    m_displayModeButton->setToolTip(tr("Toggle ASCII / Hex display"));
+    controlsLayout->addWidget(m_displayModeButton);
+
+    m_timestampButton = new QPushButton(tr("Timestamps"), this);
+    m_timestampButton->setCheckable(true);
+    m_timestampButton->setToolTip(tr("Prepend timestamps to received lines"));
+    controlsLayout->addWidget(m_timestampButton);
+
+    m_logToggleButton = new QPushButton(tr("Log to File"), this);
+    m_logToggleButton->setCheckable(true);
+    m_logToggleButton->setToolTip(tr("Log received data to a file"));
+    controlsLayout->addWidget(m_logToggleButton);
+
+    m_counterLabel = new QLabel(tr("RX: 0  TX: 0"), this);
+    controlsLayout->addStretch();
+    controlsLayout->addWidget(m_counterLabel);
+
     // ---- Middle display area ----------------------------------------------
     m_displayStack = new QStackedWidget(this);
 
     m_textDisplay = new QPlainTextEdit(this);
     m_textDisplay->setReadOnly(true);
     m_textDisplay->setFont(QFont(QStringLiteral("Courier"), 10));
-    m_displayStack->addWidget(m_textDisplay);  // page 0
+    m_displayStack->addWidget(m_textDisplay);  // page 0 — ASCII
+
+    m_hexViewer = new HexViewer(this);
+    m_displayStack->addWidget(m_hexViewer);    // page 1 — Hex
 
     m_displayStack->setCurrentIndex(0);
 
@@ -83,11 +114,22 @@ SerialMonitorTab::SerialMonitorTab(QWidget *parent)
     m_sendButton = new QPushButton(tr("Send"), this);
     sendLayout->addWidget(m_sendButton);
 
+    // ---- Process launcher (collapsible) -----------------------------------
+    m_processGroup = new QGroupBox(tr("Process Launcher"), this);
+    m_processGroup->setCheckable(true);
+    m_processGroup->setChecked(false);
+
+    m_processLauncher = new ProcessLauncher(m_processGroup);
+    auto *processLayout = new QVBoxLayout(m_processGroup);
+    processLayout->addWidget(m_processLauncher);
+
     // ---- Overall layout ---------------------------------------------------
     auto *mainLayout = new QVBoxLayout(this);
     mainLayout->addLayout(toolbarLayout);
+    mainLayout->addLayout(controlsLayout);
     mainLayout->addWidget(m_displayStack, 1);  // stretch factor 1
     mainLayout->addLayout(sendLayout);
+    mainLayout->addWidget(m_processGroup);
 
     // ---- UI signal-slot connections ---------------------------------------
     connect(m_refreshButton, &QPushButton::clicked,
@@ -101,6 +143,15 @@ SerialMonitorTab::SerialMonitorTab(QWidget *parent)
 
     connect(m_sendEdit, &QLineEdit::returnPressed,
             this, &SerialMonitorTab::sendData);
+
+    connect(m_displayModeButton, &QPushButton::clicked,
+            this, &SerialMonitorTab::toggleDisplayMode);
+
+    connect(m_timestampButton, &QPushButton::clicked,
+            this, &SerialMonitorTab::toggleTimestamps);
+
+    connect(m_logToggleButton, &QPushButton::clicked,
+            this, &SerialMonitorTab::toggleLogging);
 
     // ---- Cross-thread connections (queued automatically) ------------------
     // Requests from main thread → worker thread
@@ -132,6 +183,13 @@ SerialMonitorTab::SerialMonitorTab(QWidget *parent)
 
 SerialMonitorTab::~SerialMonitorTab()
 {
+    // Close log file if active
+    if (m_logFile) {
+        m_logFile->close();
+        delete m_logFile;
+        m_logFile = nullptr;
+    }
+
     // Signal the worker to close the port
     emit closeRequested();
 
@@ -194,6 +252,9 @@ void SerialMonitorTab::sendData()
     default: break;
     }
 
+    m_bytesSent += data.size();
+    updateCounterLabel();
+
     emit sendRequested(data);
     m_sendEdit->clear();
 }
@@ -204,7 +265,18 @@ void SerialMonitorTab::sendData()
 
 void SerialMonitorTab::onDataReceived(const QByteArray &data)
 {
+    m_bytesReceived += data.size();
+    updateCounterLabel();
+
+    // Log to file if active
+    if (m_logFile && m_logFile->isOpen()) {
+        m_logFile->write(data);
+        m_logFile->write("\n");
+    }
+
+    // Feed data to both displays
     appendToDisplay(data);
+    m_hexViewer->appendData(data + '\n');
 }
 
 void SerialMonitorTab::onWorkerError(const QString &errorString)
@@ -219,6 +291,9 @@ void SerialMonitorTab::onConnectionChanged(bool connected, const QString &portNa
     if (connected) {
         m_connectButton->setText(tr("Disconnect"));
         m_statusLabel->setText(tr("Connected: %1").arg(portName));
+        m_bytesReceived = 0;
+        m_bytesSent = 0;
+        updateCounterLabel();
     } else {
         m_connectButton->setText(tr("Connect"));
         m_statusLabel->setText(tr("Disconnected"));
@@ -228,14 +303,88 @@ void SerialMonitorTab::onConnectionChanged(bool connected, const QString &portNa
 }
 
 // ---------------------------------------------------------------------------
+// Display Mode Toggle (ASCII / Hex)
+// ---------------------------------------------------------------------------
+
+void SerialMonitorTab::toggleDisplayMode()
+{
+    const bool hexMode = m_displayModeButton->isChecked();
+    m_displayStack->setCurrentIndex(hexMode ? 1 : 0);
+    m_displayModeButton->setText(hexMode ? tr("ASCII") : tr("Hex"));
+}
+
+// ---------------------------------------------------------------------------
+// Timestamps Toggle
+// ---------------------------------------------------------------------------
+
+void SerialMonitorTab::toggleTimestamps()
+{
+    m_timestampsEnabled = m_timestampButton->isChecked();
+}
+
+// ---------------------------------------------------------------------------
+// Logging Toggle
+// ---------------------------------------------------------------------------
+
+void SerialMonitorTab::toggleLogging()
+{
+    if (m_logToggleButton->isChecked()) {
+        // Start logging — ask user for file path
+        const QString filePath = QFileDialog::getSaveFileName(
+            this, tr("Log File"), QString(), tr("Log Files (*.log);;All Files (*)"));
+
+        if (filePath.isEmpty()) {
+            m_logToggleButton->setChecked(false);
+            return;
+        }
+
+        m_logFile = new QFile(filePath, this);
+        if (!m_logFile->open(QIODevice::WriteOnly | QIODevice::Append)) {
+            m_statusLabel->setText(
+                tr("Log error: %1").arg(m_logFile->errorString()));
+            delete m_logFile;
+            m_logFile = nullptr;
+            m_logToggleButton->setChecked(false);
+            return;
+        }
+    } else {
+        // Stop logging
+        if (m_logFile) {
+            m_logFile->close();
+            delete m_logFile;
+            m_logFile = nullptr;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Display Helper
 // ---------------------------------------------------------------------------
 
 void SerialMonitorTab::appendToDisplay(const QByteArray &data)
 {
-    m_textDisplay->appendPlainText(QString::fromUtf8(data));
+    QString line = QString::fromUtf8(data);
+
+    // Prepend timestamp if enabled
+    if (m_timestampsEnabled) {
+        const QString timestamp =
+            QTime::currentTime().toString(QStringLiteral("[HH:mm:ss.zzz] "));
+        line.prepend(timestamp);
+    }
+
+    m_textDisplay->appendPlainText(line);
 
     // Auto-scroll to bottom
     QScrollBar *scrollBar = m_textDisplay->verticalScrollBar();
     scrollBar->setValue(scrollBar->maximum());
+}
+
+// ---------------------------------------------------------------------------
+// Counter Label
+// ---------------------------------------------------------------------------
+
+void SerialMonitorTab::updateCounterLabel()
+{
+    m_counterLabel->setText(
+        tr("RX: %1  TX: %2").arg(m_bytesReceived).arg(m_bytesSent));
 }

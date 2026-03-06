@@ -72,6 +72,10 @@ Project source lives in [`project/`](project/).
 ### Week 12 — Threading
 - [Threading](weeks/week-12/threading.md)
 
+### Week 13 — Serial Monitor Advanced
+- [Hex Display](weeks/week-13/hex-display.md)
+- [Process Launcher](weeks/week-13/process-launcher.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed
