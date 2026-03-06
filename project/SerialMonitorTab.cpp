@@ -1,4 +1,4 @@
-// Week 13 — Serial Monitor Advanced
+// Week 14 — Cross-Platform & Deployment
 
 #include "SerialMonitorTab.h"
 #include "HexViewer.h"
@@ -212,6 +212,19 @@ void SerialMonitorTab::refreshPorts()
     const auto ports = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo &info : ports) {
         m_portCombo->addItem(info.portName(), info.systemLocation());
+    }
+
+    // Platform-specific hint when no ports are found
+    if (m_portCombo->count() == 0) {
+#ifdef Q_OS_MACOS
+        m_portCombo->addItem(tr("No ports (try /dev/cu.*)"));
+#elif defined(Q_OS_WIN)
+        m_portCombo->addItem(tr("No ports (check Device Manager)"));
+#elif defined(Q_OS_LINUX)
+        m_portCombo->addItem(tr("No ports (check /dev/ttyUSB* or /dev/ttyACM*)"));
+#else
+        m_portCombo->addItem(tr("No ports found"));
+#endif
     }
 }
 

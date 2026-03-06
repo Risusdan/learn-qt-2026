@@ -1,4 +1,4 @@
-// Week 11 — Serial Monitor Connection
+// Week 14 — Cross-Platform & Deployment
 
 #include "MainWindow.h"
 #include "CodeEditor.h"
@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStatusBar>
+#include <QSysInfo>
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -339,6 +340,11 @@ void MainWindow::onAbout()
         tr("<h3>DevConsole</h3>"
            "<p>A multi-tab developer console for log viewing, "
            "text editing, and serial monitoring.</p>"
-           "<p>Built with Qt 6 &amp; C++17.</p>"
-           "<p>Week 11 — Serial Monitor Connection</p>"));
+           "<p>Built with Qt %1 &amp; C++17.</p>"
+           "<p>Platform: %2</p>"
+           "<p>Architecture: %3</p>"
+           "<p>Week 14 — Cross-Platform &amp; Deployment</p>")
+            .arg(qVersion(),
+                 QSysInfo::prettyProductName(),
+                 QSysInfo::currentCpuArchitecture()));
 }

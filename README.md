@@ -76,6 +76,10 @@ Project source lives in [`project/`](project/).
 - [Hex Display](weeks/week-13/hex-display.md)
 - [Process Launcher](weeks/week-13/process-launcher.md)
 
+### Week 14 — Cross-Platform & Deployment
+- [Cross-Platform Development](weeks/week-14/cross-platform.md)
+- [Deployment](weeks/week-14/deployment.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

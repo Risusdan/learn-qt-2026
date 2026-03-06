@@ -20,7 +20,7 @@ All required topics from the [Learning Path](LearningPath.md). OPTIONAL topics e
 | 11 | Serial Monitor — Connection | Done |
 | 12 | Threading | Done |
 | 13 | Serial Monitor — Advanced | Done |
-| 14 | Cross-Platform & Deployment | Not started |
+| 14 | Cross-Platform & Deployment | Done |
 
 ---
 

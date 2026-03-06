@@ -1,4 +1,4 @@
-// Week 11 — Serial Monitor Connection
+// Week 14 — Cross-Platform & Deployment
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
