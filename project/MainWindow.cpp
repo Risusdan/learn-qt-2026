@@ -1,9 +1,9 @@
-// Week 9 — Text Editor Core
+// Week 10 — Text Editor Features
 
 #include "MainWindow.h"
 #include "CodeEditor.h"
-#include "CppHighlighter.h"
 #include "LogViewer.h"
+#include "TextEditorTab.h"
 
 #include <QAction>
 #include <QApplication>
@@ -58,10 +58,15 @@ void MainWindow::setupMenus()
     connect(openAction, &QAction::triggered, this, &MainWindow::onOpenFile);
     fileMenu->addAction(openAction);
 
-    auto *saveAction = new QAction(tr("&Save As..."), this);
+    auto *saveAction = new QAction(tr("&Save"), this);
     saveAction->setShortcut(QKeySequence(tr("Ctrl+S")));
     connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveFile);
     fileMenu->addAction(saveAction);
+
+    auto *saveAsAction = new QAction(tr("Save &As..."), this);
+    saveAsAction->setShortcut(QKeySequence(tr("Ctrl+Shift+S")));
+    connect(saveAsAction, &QAction::triggered, this, &MainWindow::onSaveFileAs);
+    fileMenu->addAction(saveAsAction);
 
     fileMenu->addSeparator();
 
@@ -73,6 +78,35 @@ void MainWindow::setupMenus()
     exitAction->setShortcut(QKeySequence(tr("Ctrl+Q")));
     connect(exitAction, &QAction::triggered, qApp, &QApplication::quit);
     fileMenu->addAction(exitAction);
+
+    // ---- Edit menu --------------------------------------------------------
+    auto *editMenu = menuBar()->addMenu(tr("&Edit"));
+
+    m_undoAction = new QAction(tr("&Undo"), this);
+    m_undoAction->setShortcut(QKeySequence(tr("Ctrl+Z")));
+    connect(m_undoAction, &QAction::triggered, this, [this]() {
+        if (auto *editor = m_textEditorTab->currentEditor()) {
+            editor->undo();
+        }
+    });
+    editMenu->addAction(m_undoAction);
+
+    m_redoAction = new QAction(tr("&Redo"), this);
+    m_redoAction->setShortcut(QKeySequence(tr("Ctrl+Y")));
+    connect(m_redoAction, &QAction::triggered, this, [this]() {
+        if (auto *editor = m_textEditorTab->currentEditor()) {
+            editor->redo();
+        }
+    });
+    editMenu->addAction(m_redoAction);
+
+    editMenu->addSeparator();
+
+    auto *findReplaceAction = new QAction(tr("&Find/Replace..."), this);
+    findReplaceAction->setShortcut(QKeySequence(tr("Ctrl+F")));
+    connect(findReplaceAction, &QAction::triggered,
+            this, &MainWindow::onFindReplace);
+    editMenu->addAction(findReplaceAction);
 
     // ---- Help menu --------------------------------------------------------
     auto *helpMenu = menuBar()->addMenu(tr("&Help"));
@@ -91,30 +125,39 @@ void MainWindow::setupTabs()
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);
 
-    // Tab 1 — Log Viewer (Week 6)
+    // Tab 1 — Log Viewer
     m_logViewer = new LogViewer(m_tabWidget);
     m_tabWidget->addTab(m_logViewer, tr("Log Viewer"));
 
-    // Update window title when a file is loaded
     connect(m_logViewer, &LogViewer::fileLoaded, this, [this](const QString &filePath) {
         const QString fileName = QFileInfo(filePath).fileName();
-        setWindowTitle(tr("DevConsole \u2014 %1").arg(fileName));
+        setWindowTitle(tr("DevConsole — %1").arg(fileName));
+        addToRecentFiles(filePath);
     });
 
-    // Show line count in the status bar when it changes
     connect(m_logViewer, &LogViewer::lineCountChanged, this, [this](int count) {
         statusBar()->showMessage(tr("Lines: %1").arg(count));
     });
 
-    // Tab 2 — Text Editor (Week 9)
-    m_codeEditor = new CodeEditor(m_tabWidget);
-    new CppHighlighter(m_codeEditor->document());
-    m_tabWidget->addTab(m_codeEditor, tr("Text Editor"));
+    // Tab 2 — Text Editor
+    m_textEditorTab = new TextEditorTab(m_tabWidget);
+    m_tabWidget->addTab(m_textEditorTab, tr("Text Editor"));
+
+    connect(m_textEditorTab, &TextEditorTab::fileOpened, this, [this](const QString &filePath) {
+        const QString fileName = QFileInfo(filePath).fileName();
+        setWindowTitle(tr("DevConsole — %1").arg(fileName));
+        addToRecentFiles(filePath);
+    });
+
+    connect(m_textEditorTab, &TextEditorTab::fileSaved, this, [this](const QString &filePath) {
+        const QString fileName = QFileInfo(filePath).fileName();
+        statusBar()->showMessage(tr("Saved: %1").arg(fileName), 3000);
+    });
 
     // Tab 3 — Serial Monitor (placeholder)
     auto *serialMonitorTab = new QWidget(m_tabWidget);
     auto *serialLayout     = new QVBoxLayout(serialMonitorTab);
-    auto *serialLabel      = new QLabel(tr("Serial Monitor \u2014 Coming Week 11"), serialMonitorTab);
+    auto *serialLabel      = new QLabel(tr("Serial Monitor — Coming Week 11"), serialMonitorTab);
     serialLabel->setAlignment(Qt::AlignCenter);
     serialLayout->addWidget(serialLabel);
     m_tabWidget->addTab(serialMonitorTab, tr("Serial Monitor"));
@@ -143,7 +186,6 @@ void MainWindow::loadSettings()
     m_recentFiles = settings.value("files").toStringList();
     settings.endGroup();
 
-    // Trim the list to the maximum allowed entries
     while (m_recentFiles.size() > MaxRecentFiles) {
         m_recentFiles.removeLast();
     }
@@ -188,38 +230,21 @@ void MainWindow::updateRecentFilesMenu()
         auto *action = new QAction(displayName, m_recentFilesMenu);
         action->setData(filePath);
         connect(action, &QAction::triggered, this, [this, filePath]() {
-            m_logViewer->loadFile(filePath);
-            m_tabWidget->setCurrentWidget(m_logViewer);
+            // Route by extension: .log → LogViewer, everything else → TextEditor
+            if (filePath.endsWith(".log", Qt::CaseInsensitive)) {
+                m_logViewer->loadFile(filePath);
+                m_tabWidget->setCurrentWidget(m_logViewer);
+            } else {
+                m_textEditorTab->openFile(filePath);
+                m_tabWidget->setCurrentWidget(m_textEditorTab);
+            }
         });
         m_recentFilesMenu->addAction(action);
     }
 }
 
-// ---------------------------------------------------------------------------
-// Slot Implementations
-// ---------------------------------------------------------------------------
-
-void MainWindow::onNewFile()
+void MainWindow::addToRecentFiles(const QString &filePath)
 {
-    QMessageBox::information(
-        this,
-        tr("New File"),
-        tr("New file \u2014 not implemented yet."));
-}
-
-void MainWindow::onOpenFile()
-{
-    const QString filePath = QFileDialog::getOpenFileName(
-        this,
-        tr("Open File"),
-        QString(),
-        tr("All Files (*);;Text Files (*.txt);;Log Files (*.log)"));
-
-    if (filePath.isEmpty()) {
-        return;
-    }
-
-    // Add to recent files (remove duplicate first, then prepend)
     m_recentFiles.removeAll(filePath);
     m_recentFiles.prepend(filePath);
 
@@ -228,28 +253,76 @@ void MainWindow::onOpenFile()
     }
 
     updateRecentFilesMenu();
-
-    // Load the file into the LogViewer and switch to its tab
-    m_logViewer->loadFile(filePath);
-    m_tabWidget->setCurrentWidget(m_logViewer);
 }
 
-void MainWindow::onSaveFile()
+// ---------------------------------------------------------------------------
+// Slot Implementations
+// ---------------------------------------------------------------------------
+
+void MainWindow::onNewFile()
 {
-    const QString filePath = QFileDialog::getSaveFileName(
+    m_textEditorTab->newFile();
+    m_tabWidget->setCurrentWidget(m_textEditorTab);
+}
+
+void MainWindow::onOpenFile()
+{
+    const QString filePath = QFileDialog::getOpenFileName(
         this,
-        tr("Save File"),
+        tr("Open File"),
         QString(),
-        tr("All Files (*);;Text Files (*.txt);;Log Files (*.log)"));
+        tr("All Files (*);;C++ Files (*.h *.cpp *.c);;Text Files (*.txt);;Log Files (*.log)"));
 
     if (filePath.isEmpty()) {
         return;
     }
 
-    QMessageBox::information(
+    addToRecentFiles(filePath);
+
+    // Route by active tab or file extension
+    if (filePath.endsWith(".log", Qt::CaseInsensitive)
+        || m_tabWidget->currentWidget() == m_logViewer) {
+        m_logViewer->loadFile(filePath);
+        m_tabWidget->setCurrentWidget(m_logViewer);
+    } else {
+        m_textEditorTab->openFile(filePath);
+        m_tabWidget->setCurrentWidget(m_textEditorTab);
+    }
+}
+
+void MainWindow::onSaveFile()
+{
+    if (m_tabWidget->currentWidget() == m_textEditorTab) {
+        if (!m_textEditorTab->saveCurrentFile()) {
+            onSaveFileAs();
+        }
+    }
+}
+
+void MainWindow::onSaveFileAs()
+{
+    if (m_tabWidget->currentWidget() != m_textEditorTab) {
+        return;
+    }
+
+    const QString filePath = QFileDialog::getSaveFileName(
         this,
-        tr("File Saved"),
-        tr("Would save to: %1").arg(filePath));
+        tr("Save File As"),
+        QString(),
+        tr("All Files (*);;C++ Files (*.h *.cpp *.c);;Text Files (*.txt)"));
+
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    m_textEditorTab->saveCurrentFileAs(filePath);
+    addToRecentFiles(filePath);
+}
+
+void MainWindow::onFindReplace()
+{
+    m_tabWidget->setCurrentWidget(m_textEditorTab);
+    m_textEditorTab->showFindReplace();
 }
 
 void MainWindow::onAbout()
@@ -261,5 +334,5 @@ void MainWindow::onAbout()
            "<p>A multi-tab developer console for log viewing, "
            "text editing, and serial monitoring.</p>"
            "<p>Built with Qt 6 &amp; C++17.</p>"
-           "<p>Week 9 — Text Editor Core</p>"));
+           "<p>Week 10 — Text Editor Features</p>"));
 }

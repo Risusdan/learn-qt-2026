@@ -62,6 +62,10 @@ Project source lives in [`project/`](project/).
 - [Custom Text Editor](weeks/week-09/custom-text-editor.md)
 - [Syntax Highlighting](weeks/week-09/syntax-highlighting.md)
 
+### Week 10 — Text Editor Features
+- [File Browser](weeks/week-10/file-browser.md)
+- [Find and Replace](weeks/week-10/find-replace.md)
+
 ---
 up:: [MOC-Programming](../../../01-index/MOC-Programming.md)
 #type/learning #source/self-study #status/seed

@@ -16,7 +16,7 @@ All required topics from the [Learning Path](LearningPath.md). OPTIONAL topics e
 | 7 | Model/View Programming | Done |
 | 8 | Filtering, Delegates & Search | Done |
 | 9 | Text Editor — Core | Done |
-| 10 | Text Editor — Features | Not started |
+| 10 | Text Editor — Features | Done |
 | 11 | Serial Monitor — Connection | Not started |
 | 12 | Threading | Not started |
 | 13 | Serial Monitor — Advanced | Not started |
